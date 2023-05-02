@@ -1,10 +1,20 @@
 [package]
-name = "embedded-graphics-el320x240_36hb-sender"
+name = "embedded-graphics-el320x240-36hb-sender"
 version = "0.1.0"
+authors = ["Lolka_097"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+#async
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "time"] }
+async-trait = "0.1"
+
+# display
 embedded-graphics = "0.7.1"
 embedded-graphics-simulator = "0.4.1"
+
+[lib]
+name = "el320x240_36hb_sender"
+
+[[bin]]
+name = "text-example"
