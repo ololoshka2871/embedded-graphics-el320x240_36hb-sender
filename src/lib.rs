@@ -2,6 +2,7 @@ mod el320x240_36hb_sender;
 
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::Size};
 use embedded_graphics_simulator::{OutputSettings, OutputSettingsBuilder, SimulatorDisplay};
+use tokio::io::AsyncWriteExt;
 
 static DISPLAY_SIZE: Size = Size::new(320, 240);
 
@@ -37,6 +38,10 @@ pub async fn crate_render_loop<E>(
             .events()
             .any(|e| e == embedded_graphics_simulator::SimulatorEvent::Quit)
         {
+            if let Some(port) = port.as_mut() {
+                println!("Flushing port... and exit");
+                port.flush().await.unwrap();
+            }
             break Ok(());
         }
 
@@ -46,7 +51,7 @@ pub async fn crate_render_loop<E>(
                 .as_image_buffer()
                 .as_raw()
                 .chunks(8)
-                .map(|v| v.iter().fold(0, |acc, v| (acc << 1) + (*v > 0) as u8))
+                .map(|v| v.iter().fold(0, |acc, v| (acc << 1) | (*v != 0) as u8))
                 .collect::<Vec<_>>();
 
             assert_eq!(

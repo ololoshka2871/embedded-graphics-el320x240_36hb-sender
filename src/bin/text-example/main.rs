@@ -1,7 +1,5 @@
 mod render;
 
-use std::time::Duration;
-
 use clap::Parser;
 
 use tokio_serial::SerialPortBuilderExt;
@@ -36,12 +34,11 @@ async fn main() {
         println!("Test mode");
         None
     } else {
-        let p = args.port.unwrap();
-        println!("Connecting to '{}'", p);
+        let p = args.port.expect("Serial port is not specified");
+        println!("Connecting to '{}'...", p);
 
         Some(
             tokio_serial::new(p, 1_500_000)
-                .timeout(Duration::from_millis(100))
                 .open_native_async()
                 .unwrap(),
         )
@@ -50,6 +47,7 @@ async fn main() {
     let mut display = create_display();
     let mut window = create_window("Test");
 
+    println!("Starting render loop...");
     crate_render_loop(&mut display, ser_stream, &mut window, render::render)
         .await
         .unwrap();
