@@ -17,6 +17,9 @@ struct Cli {
     /// List avaliable serial ports
     #[clap(short, long, default_value_t = false)]
     list: bool,
+    /// Test only, do not send data to display
+    #[clap(short, long, default_value_t = false)]
+    test: bool,
     /// Serial port to connect to
     port: Option<String>,
 }
@@ -47,26 +50,29 @@ async fn main() {
 
     let args = Cli::parse();
 
-    let port = if args.list {
+    let ser_stream = if args.list {
         println!("Avaliable serial ports:");
         for port in tokio_serial::available_ports().unwrap() {
             println!("{}", port.port_name);
         }
         return;
+    } else if args.test {
+        println!("Test mode");
+        None
     } else {
         let p = args.port.unwrap();
         println!("Connecting to '{}'", p);
-        p
+
+        Some(tokio_serial::new(p, 1_500_000)
+            .timeout(Duration::from_millis(100))
+            .open_native_async()
+            .unwrap())
     };
 
     let mut display = create_display();
     let mut window = create_window("Test");
-    let mut ser_stream = tokio_serial::new(port, 1_500_000)
-        .timeout(Duration::from_millis(100))
-        .open_native_async()
-        .unwrap();
 
-    crate_render_loop(&mut display, &mut ser_stream, &mut window, render)
+    crate_render_loop(&mut display, ser_stream, &mut window, render)
         .await
         .unwrap();
 }
