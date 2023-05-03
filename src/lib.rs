@@ -1,8 +1,12 @@
+mod el320x240_36hb_sender;
+
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::Size};
-use embedded_graphics_simulator::SimulatorDisplay;
+use embedded_graphics_simulator::{OutputSettings, OutputSettingsBuilder, SimulatorDisplay};
+
+static DISPLAY_SIZE: Size = Size::new(320, 240);
 
 pub fn create_display() -> SimulatorDisplay<BinaryColor> {
-    SimulatorDisplay::<BinaryColor>::new(Size::new(320, 240))
+    SimulatorDisplay::<BinaryColor>::new(DISPLAY_SIZE)
 }
 
 pub fn create_window(title: &str) -> embedded_graphics_simulator::Window {
@@ -16,9 +20,16 @@ pub fn create_window(title: &str) -> embedded_graphics_simulator::Window {
 
 pub async fn crate_render_loop<E>(
     mut display: &mut SimulatorDisplay<BinaryColor>,
+    port: &mut tokio_serial::SerialStream,
     window: &mut embedded_graphics_simulator::Window,
     mut render: impl FnMut(&mut SimulatorDisplay<BinaryColor>) -> Result<(), E>,
 ) -> Result<(), E> {
+    lazy_static::lazy_static! {
+        static ref OUTPUT_SETTINGS: OutputSettings = OutputSettingsBuilder::new().scale(1).build();
+    }
+
+    //tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
     loop {
         render(&mut display)?;
 
@@ -31,6 +42,23 @@ pub async fn crate_render_loop<E>(
             break Ok(());
         }
 
-        tokio::time::sleep(tokio::time::Duration::from_micros(20)).await;
+        let img_binary = display
+            .to_grayscale_output_image(&OUTPUT_SETTINGS)
+            .as_image_buffer()
+            .as_raw()
+            .chunks(8)
+            .map(|v| v.iter().fold(0, |acc, v| (acc << 1) + (*v > 0) as u8))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            img_binary.len(),
+            (DISPLAY_SIZE.height * DISPLAY_SIZE.width / 8) as usize
+        );
+
+        if let Err(e) = el320x240_36hb_sender::send_to_display(port, &img_binary).await {
+            panic!("Port error: {:?}", e);
+        } else {
+            println!("Sent");
+        }
     }
 }

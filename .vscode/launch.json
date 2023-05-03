@@ -8,19 +8,13 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=embedded-graphics-el320x240_36hb-sender",
-                    "--package=embedded-graphics-el320x240_36hb-sender"
-                ],
-                "filter": {
-                    "name": "embedded-graphics-el320x240_36hb-sender",
-                    "kind": "bin"
-                }
+            "program": "${workspaceFolder}/target/debug/text-example.exe",
+            "args": [
+                "COM3"
+            ],
+            "env": {
+                "PATH": "${env:PATH};C:\\src\\vcpkg\\installed\\x64-windows\\bin"
             },
-            "args": [],
             "cwd": "${workspaceFolder}"
         }
     ]
